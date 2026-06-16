@@ -20,6 +20,7 @@ let selectedHashtags = [];
 const elements = {
     btnRefresh: document.getElementById('btn-refresh'),
     btnExportCSV: document.getElementById('btn-export-csv'),
+    themeToggle: document.getElementById('theme-toggle'),
     searchInput: document.getElementById('search-input'),
     clearSearchBtn: document.getElementById('clear-search-btn'),
     filterType: document.getElementById('filter-type'),
@@ -85,6 +86,19 @@ function initApp() {
     elements.tweetEditorTextarea.addEventListener('input', handleTweetEditorInput);
     elements.btnCopyTweet.addEventListener('click', copyDraftTweet);
     elements.btnShareX.addEventListener('click', postToX);
+
+    // Theme Toggle Initialization & Setup
+    elements.themeToggle.addEventListener('change', toggleTheme);
+    
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme === 'light') {
+        elements.themeToggle.checked = true;
+        document.body.classList.add('light-theme');
+    } else {
+        elements.themeToggle.checked = false;
+        document.body.classList.remove('light-theme');
+    }
+    updateThemeIconStates();
 
     // Initial load
     fetchReleaseNotes();
@@ -670,4 +684,33 @@ function exportToCSV() {
     document.body.removeChild(link);
     
     showToast('Release notes exported to CSV successfully!', 'success');
+}
+
+// Swaps the active color scheme by adding/removing the 'light-theme' class on body
+function toggleTheme() {
+    const isLight = elements.themeToggle.checked;
+    if (isLight) {
+        document.body.classList.add('light-theme');
+        localStorage.setItem('theme', 'light');
+        showToast('Swapped to Light Theme', 'success');
+    } else {
+        document.body.classList.remove('light-theme');
+        localStorage.setItem('theme', 'dark');
+        showToast('Swapped to Dark Theme', 'success');
+    }
+    updateThemeIconStates();
+}
+
+// Synchronizes the active/inactive state (colors) of the moon & sun navbar icons
+function updateThemeIconStates() {
+    const isLight = elements.themeToggle.checked;
+    const moonIcon = document.querySelector('.theme-toggle-wrapper .fa-moon');
+    const sunIcon = document.querySelector('.theme-toggle-wrapper .fa-sun');
+    if (isLight) {
+        if (moonIcon) moonIcon.classList.remove('active');
+        if (sunIcon) sunIcon.classList.add('active');
+    } else {
+        if (moonIcon) moonIcon.classList.add('active');
+        if (sunIcon) sunIcon.classList.remove('active');
+    }
 }

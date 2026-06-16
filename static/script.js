@@ -19,6 +19,7 @@ let selectedHashtags = [];
 // DOM Elements Cache
 const elements = {
     btnRefresh: document.getElementById('btn-refresh'),
+    btnExportCSV: document.getElementById('btn-export-csv'),
     searchInput: document.getElementById('search-input'),
     clearSearchBtn: document.getElementById('clear-search-btn'),
     filterType: document.getElementById('filter-type'),
@@ -62,6 +63,7 @@ document.addEventListener('DOMContentLoaded', () => {
 function initApp() {
     // Event Listeners for controls
     elements.btnRefresh.addEventListener('click', fetchReleaseNotes);
+    elements.btnExportCSV.addEventListener('click', exportToCSV);
     elements.btnErrorRetry.addEventListener('click', fetchReleaseNotes);
     elements.btnResetFilters.addEventListener('click', resetFilters);
     
@@ -388,6 +390,17 @@ function renderFeedTimeline() {
             });
             actionsRow.appendChild(btnCopy);
             
+            // Copy Update Content Text
+            const btnCopyText = document.createElement('button');
+            btnCopyText.className = 'btn-card-action';
+            btnCopyText.innerHTML = '<i class="fa-regular fa-clipboard"></i> Copy Update';
+            btnCopyText.addEventListener('click', () => {
+                const plainText = cleanHtmlToPlainText(item.contentHtml);
+                const copyPayload = `BigQuery ${item.type} (${item.date}):\n${plainText.trim()}`;
+                copyToClipboard(copyPayload, 'Update content copied to clipboard!');
+            });
+            actionsRow.appendChild(btnCopyText);
+            
             // Open Tweet Composer Button
             const btnTweet = document.createElement('button');
             btnTweet.className = 'btn-card-action btn-tweet-action';
@@ -625,4 +638,36 @@ function postToX() {
     const shareUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`;
     window.open(shareUrl, '_blank', 'noopener,noreferrer');
     showToast('Redirected to X (Twitter) composer!', 'success');
+}
+
+// Export currently filtered release notes to a standard CSV file
+function exportToCSV() {
+    if (filteredSubItems.length === 0) {
+        showToast('No release notes to export!', 'error');
+        return;
+    }
+    
+    const headers = ['Date', 'Type', 'Content', 'Link'];
+    const rows = filteredSubItems.map(item => [
+        item.date,
+        item.type,
+        cleanHtmlToPlainText(item.contentHtml).replace(/\s+/g, ' ').trim(),
+        item.sourceLink || ''
+    ]);
+    
+    const csvContent = [
+        headers.join(','),
+        ...rows.map(row => row.map(val => `"${val.replace(/"/g, '""')}"`).join(','))
+    ].join('\n');
+    
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `bigquery_release_notes_export.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    showToast('Release notes exported to CSV successfully!', 'success');
 }
